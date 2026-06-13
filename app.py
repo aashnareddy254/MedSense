@@ -96,29 +96,36 @@ st.divider()
 
 # Billing System
 
+st.divider()
+
 st.subheader("🧾 Billing System")
+
+if "cart" not in st.session_state:
+    st.session_state.cart = []
 
 medicine = st.selectbox(
     "Select Medicine",
-    df["Medicine"]
+    df["Medicine"],
+    key="bill_medicine"
 )
 
 qty_sold = st.number_input(
-    "Quantity Sold",
+    "Quantity",
     min_value=1,
-    value=1
+    value=1,
+    key="bill_qty"
 )
 
-if st.button("Generate Bill"):
-
-    current_stock = df.loc[
-        df["Medicine"] == medicine,
-        "Quantity"
-    ].values[0]
+if st.button("Add To Bill"):
 
     price = df.loc[
         df["Medicine"] == medicine,
         "Price"
+    ].values[0]
+
+    current_stock = df.loc[
+        df["Medicine"] == medicine,
+        "Quantity"
     ].values[0]
 
     if qty_sold > current_stock:
@@ -129,34 +136,66 @@ if st.button("Generate Bill"):
 
     else:
 
-        amount = qty_sold * price
+        st.session_state.cart.append({
+            "Medicine": medicine,
+            "Quantity": qty_sold,
+            "Price": price,
+            "Amount": qty_sold * price
+        })
 
-        df.loc[
-            df["Medicine"] == medicine,
-            "Quantity"
-        ] -= qty_sold
+        st.success(
+            f"Added {medicine} to bill"
+        )
+
+# Show Current Bill
+
+if len(st.session_state.cart) > 0:
+
+    st.write("### Current Bill")
+
+    bill_df = pd.DataFrame(
+        st.session_state.cart
+    )
+
+    st.dataframe(
+        bill_df,
+        use_container_width=True
+    )
+
+    total_amount = bill_df["Amount"].sum()
+
+    st.success(
+        f"Total Amount: ₹{total_amount}"
+    )
+
+    if st.button("Generate Final Bill"):
+
+        for item in st.session_state.cart:
+
+            med = item["Medicine"]
+            qty = item["Quantity"]
+
+            df.loc[
+                df["Medicine"] == med,
+                "Quantity"
+            ] -= qty
 
         df.to_csv(
             "inventory.csv",
             index=False
         )
 
-        st.session_state.sales_history.append({
-            "Medicine": medicine,
-            "Quantity": qty_sold,
-            "Amount": amount
-        })
+        st.success(
+            "Bill Generated Successfully!"
+        )
 
-        st.success("Bill Generated Successfully")
+        st.session_state.sales_history.extend(
+            st.session_state.cart
+        )
 
-        st.write("### Invoice")
-        st.write(f"Medicine: {medicine}")
-        st.write(f"Quantity: {qty_sold}")
-        st.write(f"Amount: ₹{amount}")
+        st.session_state.cart = []
 
         st.rerun()
-
-st.divider()
 
 # Sales History
 
@@ -178,20 +217,29 @@ else:
 
 st.divider()
 
-# Demand Forecast
+st.subheader("📈 Top Selling Medicines")
 
-st.subheader("📈 Demand Forecast")
+if len(st.session_state.sales_history) > 0:
 
-forecast = pd.DataFrame({
-    "Week":[1,2,3,4,5,6],
-    "Predicted Demand":[100,120,140,160,175,190]
-})
+    sales_df = pd.DataFrame(
+        st.session_state.sales_history
+    )
 
-st.line_chart(
-    forecast.set_index("Week")
-)
+    demand = sales_df.groupby(
+        "Medicine"
+    )["Quantity"].sum()
 
-st.divider()
+    st.bar_chart(demand)
+
+    st.caption(
+        "X-axis: Medicine | Y-axis: Units Sold"
+    )
+
+else:
+
+    st.info(
+        "Generate some bills to see demand trends."
+    )
 
 # AI Assistant
 
