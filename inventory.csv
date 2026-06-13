@@ -1,6 +1,7 @@
-Medicine,Quantity
-Paracetamol,120
-Crocin,15
-Dolo650,10
-Azithromycin,50
-VitaminC,8
+Medicine,Quantity,Expiry_Days,Price
+Paracetamol,120,180,2
+Crocin,15,25,3
+Dolo650,10,15,4
+Azithromycin,50,90,12
+VitaminC,8,10,5
+Cetirizine,35,120,2
